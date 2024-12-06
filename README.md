@@ -73,6 +73,7 @@ Run:
 ## How the Scene Works
 
 Skybox is a half sphere model. and we created shaders on this model.
+![1733471566531113](https://github.com/user-attachments/assets/d491f4e9-2882-4b01-9b09-e21917a28b95)
 
 ## How Aurora is Simulated in Shaders
 ### Helper functions in frag shader
@@ -130,10 +131,134 @@ float hash21(in vec2 n) {
 }
 ```
 ### Aurora simulation functions in frag shader
+```
+vec4 aurora(vec3 ro, vec3 rd, vec2 fragCoord) {
+    vec4 col = vec4(0);
+    vec4 avgCol = vec4(0);
 
+    // Loop to simulate integration along the ray
+    for (float i = 0.; i < 50.; i++) {
+        // Offset for randomness
+        float of = 0.006 * hash21(fragCoord.xy) * smoothstep(0., 15., i);
+
+        // Parameter along the ray where sampling occurs
+        float pt = ((.8 + pow(i, 1.4) * .002) - ro.y) / (rd.y * 2. + 0.4);
+        pt -= of;
+
+        // Position along the ray
+        vec3 bpos = ro + pt * rd;
+
+        // 2D position for noise function
+        vec2 p = bpos.zx;
+
+        // Compute noise value
+        float rzt = triNoise2d(p, 0.06);
+
+        // Color with alpha channel set to noise value
+        vec4 col2 = vec4(0, 0, 0, rzt);
+
+        // Color modulation to simulate aurora's color variation
+        col2.rgb = (sin(1. - vec3(2.15, -.5, 1.2) + i * 0.043) * 0.5 + 0.5) * rzt;
+
+        // Averaging colors
+        avgCol = mix(avgCol, col2, .5);
+
+        // Accumulate color with exponential decay
+        col += avgCol * exp2(-i * 0.065 - 2.5) * smoothstep(0., 5., i);
+    }
+
+    // Adjust brightness based on ray direction
+    col *= (clamp(rd.y * 15. + .4, 0., 1.));
+
+    // Return the final aurora color
+    return col * 1.8;
+}
+```
+### Background and star functions
+1. Generates a pseudo-random 3D vector based on input q, used for star placement and brightness.
+```
+vec3 nmzHash33(vec3 q) {
+    uvec3 p = uvec3(ivec3(q));
+    p = p * uvec3(374761393U, 1103515245U, 668265263U) + p.zxy + p.yzx;
+    p = p.yzx * (p.zxy ^ (p >> 3U));
+    return vec3(p ^ (p >> 16U)) * (1.0 / vec3(0xffffffffU));
+}
+```
+2. Simulates stars in the background by placing bright points in the sky with slight variations in color and brightness.
+```
+vec3 stars(in vec3 p) {
+    vec3 c = vec3(0.);
+    float res = iResolution.x * 1.;
+
+    for (float i = 0.; i < 4.; i++) {
+        vec3 q = fract(p * (.15 * res)) - 0.5;
+        vec3 id = floor(p * (.15 * res));
+        vec2 rn = nmzHash33(id).xy;
+        float c2 = 1. - smoothstep(0., .6, length(q));
+        c2 *= step(rn.x, .0005 + i * i * 0.001);
+        c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.), rn.y) * 0.1 + 0.9);
+        p *= 1.3;
+    }
+    return c * c * .8;
+}
+```
+3. Generates the background gradient of the sky by blending between two colors based on the view direction.
+```
+vec3 bg(in vec3 rd) {
+    float sd = dot(normalize(vec3(-0.5, -0.6, 0.9)), rd) * 0.5 + 0.5;
+    sd = pow(sd, 5.);
+    vec3 col = mix(vec3(0.05, 0.1, 0.2), vec3(0.1, 0.05, 0.2), sd);
+    return col * .63;
+}
+```
+### Main function in frag shader
+```
+void main() {
+    // Map texture coordinates to fragment coordinates
+    vec2 fragCoord = TexCoords * iResolution.xy;
+
+    // Normalize coordinates
+    vec2 q = fragCoord.xy / iResolution.xy;
+    vec2 p = q - 0.5;
+    p.x *= iResolution.x / iResolution.y;  // Correct for aspect ratio
+
+    // Camera setup
+    vec3 ro = vec3(0, 0, -6.7);          // Camera position
+    vec3 rd = normalize(vec3(p, 1.3));   // Initial ray direction
+
+    // Mouse interaction
+    vec2 mo = iMouse.xy / iResolution.xy - 0.5;
+    mo = (mo == vec2(-0.5)) ? vec2(-0.1, 0.1) : mo;
+    mo.x *= iResolution.x / iResolution.y;
+
+    // Apply rotations based on mouse movement and time
+    rd.yz *= mm2(mo.y);
+    rd.xz *= mm2(mo.x + sin(time * 0.05) * 0.2);
+
+    // Initialize color
+    vec3 col = vec3(0.0);
+
+    // Fade effect based on ray direction
+    vec3 brd = rd;
+    float fade = smoothstep(0.0, 0.01, abs(brd.y)) * 0.1 + 0.9;
+
+    // Background color
+    col = bg(rd) * fade;
+
+    if (rd.y > 0.0) {
+        // If the ray is pointing upwards, render the aurora and stars
+        vec4 aur = smoothstep(0.0, 1.5, aurora(ro, rd, fragCoord)) * fade;
+        col += stars(rd);
+        col = col * (1.0 - aur.a) + aur.rgb;
+    }
+    // Output the final color
+    FragColor = vec4(col, 1.0);
+}
+```
   
 ## References
 Shaders: https://www.shadertoy.com/view/XtGGRt
+
 Project Code:
 - https://github.com/MikeShah/ComputerGraphicsCode/tree/master/11/terrain
 - https://github.com/MikeShah/ComputerGraphicsCode/tree/master/10/shadows
