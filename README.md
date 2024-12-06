@@ -7,7 +7,16 @@ My Graphics Playground with Aurora Simulation Using C++ and OpenGL
 ![image](https://github.com/user-attachments/assets/1d00c1b2-34cc-4098-85ab-41bedbd8c191)
 ![image](https://github.com/user-attachments/assets/2e19d326-9262-4f48-b6d6-86b8d8d5ce94)
 
+## How to compile and run the program
+Compile the program:
+```
+python3 build.py
+```
 
+Run:
+```
+./prog
+```
 
 ## Project Structure
 1. ./common
@@ -58,10 +67,74 @@ My Graphics Playground with Aurora Simulation Using C++ and OpenGL
    - Transform.cpp
    - VertexBufferLayout.cpp
 5. Build.py: build the executable
+
 ## UML Diagram
 
 ## How the Scene Works
 
-## How Aurora is Simulated
+Skybox is a half sphere model. and we created shaders on this model.
+
+## How Aurora is Simulated in Shaders
+### Helper functions in frag shader
+1. Creates a 2x2 rotation matrix for rotating vectors in 2D space by angle a.
+```
+mat2 mm2(in float a) {
+    float c = cos(a), s = sin(a);
+    return mat2(c, s, -s, c);
+}
+```
+2. A fixed rotation matrix for an angle of approximately 17 degrees (cos(17°) ≈ 0.95534, sin(17°) ≈ 0.29552).
+```
+mat2 m2 = mat2(0.95534, 0.29552, -0.29552, 0.95534);
+```
+3. Generates a triangle wave pattern between 0.01 and 0.49. The fract function returns the fractional part of x, and abs(fract(x) - .5) creates a symmetric triangle wave.
+```
+float tri(in float x) {
+    return clamp(abs(fract(x) - .5), 0.01, 0.49);
+}
+```
+4. Combines triangle waves in both x and y directions to produce a 2D pattern.
+```
+vec2 tri2(in vec2 p) {
+    return vec2(tri(p.x) + tri(p.y), tri(p.y + tri(p.x)));
+}
+```
+5. Generates a 2D noise pattern using the triangle wave functions and rotations to simulate the aurora's texture.
+```
+float triNoise2d(in vec2 p, float spd) {
+    float z = 1.8;
+    float z2 = 2.5;
+    float rz = 0.;
+    p *= mm2(p.x * 0.06);
+    vec2 bp = p;
+    for (float i = 0.; i < 5.; i++) {
+        vec2 dg = tri2(bp * 1.85) * .75;
+        dg *= mm2(time * spd);
+        p -= dg / z2;
+
+        bp *= 1.3;
+        z2 *= .45;
+        z *= .42;
+        p *= 1.21 + (rz - 1.0) * .02;
+
+        rz += tri(p.x + tri(p.y)) * z;
+        p *= -m2;
+    }
+    return clamp(1. / pow(rz * 29., 1.3), 0., .55);
+}
+```
+6. Generates a pseudo-random value based on a 2D vector n, used for adding randomness to the effect.
+```
+float hash21(in vec2 n) {
+    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+```
+### Aurora simulation functions in frag shader
+
   
-## Acknowledgement
+## References
+Shaders: https://www.shadertoy.com/view/XtGGRt
+Project Code:
+- https://github.com/MikeShah/ComputerGraphicsCode/tree/master/11/terrain
+- https://github.com/MikeShah/ComputerGraphicsCode/tree/master/10/shadows
+- Assignment 11 SceneGraph
