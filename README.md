@@ -2,6 +2,8 @@
 My Graphics Playground with Aurora Simulation Using C++ and OpenGL
 
 ## Final Visual Effect
+![1733471779718293 (1)](https://github.com/user-attachments/assets/c3559548-6eba-4689-9ff5-9ff848fb3585)
+### Screenshots
 ![image](https://github.com/user-attachments/assets/630aa805-072a-4e10-b654-09a3126be4a2)
 ![image](https://github.com/user-attachments/assets/8a7e837f-6087-47f9-a314-8bb9639de404)
 ![image](https://github.com/user-attachments/assets/1d00c1b2-34cc-4098-85ab-41bedbd8c191)
@@ -72,7 +74,7 @@ Run:
 
 ## How the Scene Works
 
-Skybox is a half sphere model. and we created shaders on this model.
+Skybox is a half sphere model. and we created skybox effect shaders(aurora simulation) on this model.
 ![1733471566531113](https://github.com/user-attachments/assets/d491f4e9-2882-4b01-9b09-e21917a28b95)
 
 ## How Aurora is Simulated in Shaders
