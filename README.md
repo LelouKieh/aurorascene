@@ -82,7 +82,7 @@ Skybox is a half sphere model. and we created skybox effect shaders(aurora simul
 1. Creates a 2x2 rotation matrix for rotating vectors in 2D space by angle a.
 ```
 mat2 mm2(in float a) {
-    float c = cos(a), s = sin(a);
+    float c = cos(a), s = sin(a); // cosAngle and sinAngle
     return mat2(c, s, -s, c);
 }
 ```
@@ -105,19 +105,19 @@ vec2 tri2(in vec2 p) {
 5. Generates a 2D noise pattern using the triangle wave functions and rotations to simulate the aurora's texture.
 ```
 float triNoise2d(in vec2 p, float spd) {
-    float z = 1.8;
-    float z2 = 2.5;
-    float rz = 0.;
+    float z = 1.8; // amplitude
+    float z2 = 2.5; // frequency
+    float rz = 0.; // accumulatedNoise
     p *= mm2(p.x * 0.06);
-    vec2 bp = p;
+    vec2 bp = p; // basePoint
     for (float i = 0.; i < 5.; i++) {
-        vec2 dg = tri2(bp * 1.85) * .75;
+        vec2 dg = tri2(bp * 1.85) * .75; // displacement
         dg *= mm2(time * spd);
-        p -= dg / z2;
+        p -= dg / z2; // displacement / frequency
 
-        bp *= 1.3;
-        z2 *= .45;
-        z *= .42;
+        bp *= 1.3; // basePoint
+        z2 *= .45; // frequency
+        z *= .42; // amplitude
         p *= 1.21 + (rz - 1.0) * .02;
 
         rz += tri(p.x + tri(p.y)) * z;
@@ -134,9 +134,10 @@ float hash21(in vec2 n) {
 ```
 ### Aurora simulation functions in frag shader
 ```
+// ray origin, ray direction, frag coordinate
 vec4 aurora(vec3 ro, vec3 rd, vec2 fragCoord) {
-    vec4 col = vec4(0);
-    vec4 avgCol = vec4(0);
+    vec4 col = vec4(0); // accumulatedColor
+    vec4 avgCol = vec4(0); // averageColor
 
     // Loop to simulate integration along the ray
     for (float i = 0.; i < 50.; i++) {
@@ -144,17 +145,17 @@ vec4 aurora(vec3 ro, vec3 rd, vec2 fragCoord) {
         float of = 0.006 * hash21(fragCoord.xy) * smoothstep(0., 15., i);
 
         // Parameter along the ray where sampling occurs
-        float pt = ((.8 + pow(i, 1.4) * .002) - ro.y) / (rd.y * 2. + 0.4);
+        float pt = ((.8 + pow(i, 1.4) * .002) - ro.y) / (rd.y * 2. + 0.4); // pathTime
         pt -= of;
 
         // Position along the ray
-        vec3 bpos = ro + pt * rd;
+        vec3 bpos = ro + pt * rd; // beamPosition
 
         // 2D position for noise function
         vec2 p = bpos.zx;
 
         // Compute noise value
-        float rzt = triNoise2d(p, 0.06);
+        float rzt = triNoise2d(p, 0.06); // noiseValue
 
         // Color with alpha channel set to noise value
         vec4 col2 = vec4(0, 0, 0, rzt);
@@ -189,14 +190,14 @@ vec3 nmzHash33(vec3 q) {
 2. Simulates stars in the background by placing bright points in the sky with slight variations in color and brightness.
 ```
 vec3 stars(in vec3 p) {
-    vec3 c = vec3(0.);
-    float res = iResolution.x * 1.;
+    vec3 c = vec3(0.); // color
+    float res = iResolution.x * 1.; // resolution
 
     for (float i = 0.; i < 4.; i++) {
         vec3 q = fract(p * (.15 * res)) - 0.5;
         vec3 id = floor(p * (.15 * res));
-        vec2 rn = nmzHash33(id).xy;
-        float c2 = 1. - smoothstep(0., .6, length(q));
+        vec2 rn = nmzHash33(id).xy; // random numbers
+        float c2 = 1. - smoothstep(0., .6, length(q)); // star intensity
         c2 *= step(rn.x, .0005 + i * i * 0.001);
         c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.), rn.y) * 0.1 + 0.9);
         p *= 1.3;
@@ -207,7 +208,7 @@ vec3 stars(in vec3 p) {
 3. Generates the background gradient of the sky by blending between two colors based on the view direction.
 ```
 vec3 bg(in vec3 rd) {
-    float sd = dot(normalize(vec3(-0.5, -0.6, 0.9)), rd) * 0.5 + 0.5;
+    float sd = dot(normalize(vec3(-0.5, -0.6, 0.9)), rd) * 0.5 + 0.5; // sundot
     sd = pow(sd, 5.);
     vec3 col = mix(vec3(0.05, 0.1, 0.2), vec3(0.1, 0.05, 0.2), sd);
     return col * .63;
@@ -220,16 +221,16 @@ void main() {
     vec2 fragCoord = TexCoords * iResolution.xy;
 
     // Normalize coordinates
-    vec2 q = fragCoord.xy / iResolution.xy;
-    vec2 p = q - 0.5;
+    vec2 q = fragCoord.xy / iResolution.xy; // normalized coord
+    vec2 p = q - 0.5; // screen position
     p.x *= iResolution.x / iResolution.y;  // Correct for aspect ratio
 
     // Camera setup
-    vec3 ro = vec3(0, 0, -6.7);          // Camera position
+    vec3 ro = vec3(0, 0, -6.7);          // ray origin
     vec3 rd = normalize(vec3(p, 1.3));   // Initial ray direction
 
     // Mouse interaction
-    vec2 mo = iMouse.xy / iResolution.xy - 0.5;
+    vec2 mo = iMouse.xy / iResolution.xy - 0.5; // mouse offset
     mo = (mo == vec2(-0.5)) ? vec2(-0.1, 0.1) : mo;
     mo.x *= iResolution.x / iResolution.y;
 
@@ -241,7 +242,7 @@ void main() {
     vec3 col = vec3(0.0);
 
     // Fade effect based on ray direction
-    vec3 brd = rd;
+    vec3 brd = rd; // initialRayDirection = rayDirection
     float fade = smoothstep(0.0, 0.01, abs(brd.y)) * 0.1 + 0.9;
 
     // Background color
@@ -249,7 +250,7 @@ void main() {
 
     if (rd.y > 0.0) {
         // If the ray is pointing upwards, render the aurora and stars
-        vec4 aur = smoothstep(0.0, 1.5, aurora(ro, rd, fragCoord)) * fade;
+        vec4 aur = smoothstep(0.0, 1.5, aurora(ro, rd, fragCoord)) * fade; // aurora color
         col += stars(rd);
         col = col * (1.0 - aur.a) + aur.rgb;
     }
@@ -257,7 +258,34 @@ void main() {
     FragColor = vec4(col, 1.0);
 }
 ```
-  
+### vert shader
+```
+// Input vertex attributes
+layout(location = 0) in vec3 position;       // Vertex position
+layout(location = 1) in vec3 color;          // Vertex color
+layout(location = 3) in vec2 texCoords;      // Texture coordinates
+
+// Uniforms
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+// Outputs to fragment shader
+out vec3 fragColor;
+out vec3 fragPosition;
+out vec2 texCoordsOut;
+
+void main() {
+    fragColor = color;
+    fragPosition = position;
+
+    // Pass texture coordinates to fragment shader
+    texCoordsOut = texCoords;
+
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+}
+```
+
 ## References
 Shaders: https://www.shadertoy.com/view/XtGGRt
 
@@ -265,3 +293,10 @@ Project Code:
 - https://github.com/MikeShah/ComputerGraphicsCode/tree/master/11/terrain
 - https://github.com/MikeShah/ComputerGraphicsCode/tree/master/10/shadows
 - Assignment 11 SceneGraph
+
+## Next Steps
+- [ ]Refactor Object, SceneNode, SkyboxNode and Skybox: SceneNode should be only responsible for scene graph creation and updates
+- [ ]A Separate Object Manager for creation and deletion of objects in the scene
+- [ ]Terrain Generation
+- [ ]Light Implementation: Moon Light, other light effects
+- [ ]Other objects like bonfire
