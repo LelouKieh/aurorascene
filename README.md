@@ -19,6 +19,8 @@ Run:
 ```
 ./prog
 ```
+## Overview
+Build a scene with a skybox with dynamic aurora effects, including implementing a scene graph and adding objects as nodes, abstracting an object class for different components such as skybox, terrain and water, etc.
 
 ## Project Structure
 1. ./common
@@ -73,6 +75,12 @@ Run:
 ## UML Diagram
 ![Blank diagram](https://github.com/user-attachments/assets/202e8b61-2695-47c2-8b91-21bc4a797ca0)
 
+## Concepts Breakdown
+- Basic and essential concepts: Buffers, Shaders, Color Attributes, Matrices, Rotation and Camera, SDL
+- Object Loading: Meshes and Mesh Representation
+- Scene graph is used for the scene with skybox as a special type of object.
+- Scene Pipeline: Textures, Terrain Rendering
+- Other TBDs: Lightning and Advanced Lightning
 
 ## How the Scene Works
 
@@ -288,6 +296,21 @@ void main() {
 }
 ```
 
+## Challenges
+Debugging the program:
+- Add breakpoints, logs and print the output like size to identify where the issues might be
+- List all possibilities and check them one by one
+- Sometimes the problem is not about these lines of code, but the whole code structure
+
+Scene design:
+- Hard to change once implemented
+- Spend more time thinking about design instead of just working on the code 
+
+## Reflection
+Building a pipeline with scene graph makes me realize the importance of design, and give me some practices on abstraction. Although we can use ChatGPT for debugging, but it can not provide any useful clues when it comes to an unexpected visual effect in a complicated system, all debugging problems were finally done by myself. For me, debugging is the best practice for understanding concepts of graphics because if there is a single unknown concept that might cause the problem and you are not farmiliar with it, then there is no chance to detect where the problem is and finally fix it.
+
+Debugging is like kind of torture, but it gives me the courage that I can do it by my own if I am patient and have confidence in myself.
+
 ## References
 Shaders: https://www.shadertoy.com/view/XtGGRt
 
@@ -302,3 +325,8 @@ Project Code:
 - [ ]Terrain Generation
 - [ ]Light Implementation: Moon Light, other light effects
 - [ ]Other objects like bonfire
+
+## Technologies and Tools Used
+- Libraries: GLAD, GLM, KHR
+- Software for Modeling: Blender
+
