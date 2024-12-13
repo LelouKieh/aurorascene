@@ -71,6 +71,8 @@ Run:
 5. Build.py: build the executable
 
 ## UML Diagram
+![Blank diagram](https://github.com/user-attachments/assets/202e8b61-2695-47c2-8b91-21bc4a797ca0)
+
 
 ## How the Scene Works
 
